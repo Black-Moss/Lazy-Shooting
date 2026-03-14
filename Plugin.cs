@@ -25,17 +25,17 @@ public class Plugin : BaseUnityPlugin
     private static bool _hasOne;
     
     // ReSharper disable once MemberCanBePrivate.Global
-    public static ConfigEntry<bool> NeverJam;
+    public static ConfigEntry<bool> AmmunitionUi;
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> AutoRack;
     // ReSharper disable once MemberCanBePrivate.Global
-    public static ConfigEntry<bool> AmmunitionUi;
+    public static ConfigEntry<bool> IndestructibleGun;
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> InfiniteAmmunition;
     // ReSharper disable once MemberCanBePrivate.Global
-    public static ConfigEntry<bool> Recoiless;
+    public static ConfigEntry<bool> NeverJam;
     // ReSharper disable once MemberCanBePrivate.Global
-    public static ConfigEntry<bool> IndestructibleGun;
+    public static ConfigEntry<bool> Recoiless;
 
     public void Awake()
     {
@@ -45,42 +45,44 @@ public class Plugin : BaseUnityPlugin
         ModLocale.Initialize(Logger);
         ModCommand.Initialize(Logger);
         
-        NeverJam = Config.Bind(
-            "General",
-            "Never Jam",
-            false,
-            "If true, guns will never jam."
-        );
-        AutoRack = Config.Bind(
-            "General",
-            "Always Rack",
-            false,
-            "If true, guns will automatically rack and stay racked when ammo is available."
-        );
         AmmunitionUi = Config.Bind(
             "General",
             "Ammunition UI",
             true,
-            "Display your ammunition in real time!"
+            ConfigLocale("ammunitionui")
         );
-        InfiniteAmmunition = Config.Bind(
+        AutoRack = Config.Bind(
             "General",
-            "Infinite Ammunition",
+            "Auto Rack",
             false,
-            "INFINITE"
-        );
-        Recoiless = Config.Bind(
-            "General",
-            "Recoiless",
-            false,
-            "If true, guns will not have recoil."
+            ConfigLocale("autosrack")
         );
         IndestructibleGun = Config.Bind(
             "General",
             "Indestructible Gun",
             false,
-            "If true, guns will not be destroyed."
+            ConfigLocale("indestructiblegun")
         );
+        InfiniteAmmunition = Config.Bind(
+            "General",
+            "Infinite Ammunition",
+            false,
+            ConfigLocale("infiniteammunition")
+        );
+        NeverJam = Config.Bind(
+            "General",
+            "Never Jam",
+            false,
+            ConfigLocale("neverjam")
+        );
+        Recoiless = Config.Bind(
+            "General",
+            "Recoiless",
+            false,
+            ConfigLocale("recoiless")
+        );
+        
+        ModConfigs.Update();
     }
     
     [HarmonyPatch(typeof(GunScript), "Update")]
@@ -103,8 +105,9 @@ public class Plugin : BaseUnityPlugin
             }
             
             if (ModConfigs.InfiniteAmmunition)  __instance.roundsInMag = __instance.magCapacity;
-            if (ModConfigs.Recoiless) __instance.knockBack = 0;
+            __instance.knockBack = ModConfigs.Recoiless ? 0 : 8;
             if (ModConfigs.IndestructibleGun) __instance.conditionLossPerShot = 0;
+            if (!ModConfigs.AmmunitionUi) PlayerCameraHandleGunMenuPatch.DestroyAmmunitionUi();
         }
     }
     
@@ -116,13 +119,12 @@ public class Plugin : BaseUnityPlugin
         private static void Postfix(ref float __result)
         {
             if (!ModConfigs.NeverJam) return;
-            
             __result = 0;
         }
     }
     
     [HarmonyPatch(typeof(PlayerCamera), "HandleGunMenu")]
-    private static class PlayerCameraHandleGunMenuPatch
+    public static class PlayerCameraHandleGunMenuPatch
     {
         private static TextMeshProUGUI _ammunitionText;
         private static GameObject _ammunitionUiObject;
@@ -200,7 +202,6 @@ public class Plugin : BaseUnityPlugin
                 rectTransform.sizeDelta = new Vector2(150f, 30f);
                 
                 _ammunitionText = gameObject.AddComponent<TextMeshProUGUI>();
-                _ammunitionText.fontSize = 32;
                 _ammunitionText.alignment = TextAlignmentOptions.Center;
             }
             
@@ -232,21 +233,30 @@ public class Plugin : BaseUnityPlugin
             var realremainingAmmunition = _hasOne ? _remainingAmmunition + 1 : _remainingAmmunition;
             if (_ammunitionText == null)
                 return;
-            
-            if (realremainingAmmunition >= 0.8)
+
+            if (!ModConfigs.InfiniteAmmunition)
             {
-                _ammunitionText.color = Color.green;
-            }
-            else if (realremainingAmmunition >= 0.5)
-            {
-                _ammunitionText.color = Color.yellow;
+                if (realremainingAmmunition >= 0.8)
+                {
+                    _ammunitionText.color = Color.green;
+                }
+                else if (realremainingAmmunition >= 0.5)
+                {
+                    _ammunitionText.color = Color.yellow;
+                }
+                else
+                {
+                    _ammunitionText.color = Color.red;
+                }
+                _ammunitionText.fontSize = 32;
+                _ammunitionText.text = $"{realremainingAmmunition} / {_maximumAmmunition + 1}";
             }
             else
             {
-                _ammunitionText.color = Color.red;
+                _ammunitionText.fontSize = 128;
+                _ammunitionText.color = Color.black;
+                _ammunitionText.text = "∞";
             }
-            
-            _ammunitionText.text = $"{realremainingAmmunition} / {_maximumAmmunition + 1}";
         }
         
         private static void SyncVisibility(GameObject gunMenu)
@@ -257,12 +267,17 @@ public class Plugin : BaseUnityPlugin
             _ammunitionUiObject.SetActive(gunMenu.activeSelf);
         }
         
-        private static void DestroyAmmunitionUi()
+        public static void DestroyAmmunitionUi()
         {
             if (_ammunitionUiObject == null) return;
             Destroy(_ammunitionUiObject);
             _ammunitionUiObject = null;
             _ammunitionText = null;
         }
+    }
+
+    private static string ConfigLocale(string config)
+    {
+        return ModLocale.GetFormat($"config.lazyshooting.{config}");
     }
 }

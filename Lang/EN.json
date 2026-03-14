@@ -2,17 +2,26 @@
   "command": {
     "lazyshooting": {
       "description": "Set various configurations for Lazy Shooting",
-      "exception": "\"{}\" is an incorrect parameter!",
-      "output": "{} has been set to {}!",
+      "exception": "\"{0}\" is an incorrect parameter!",
       "type": {
         "name": "Configurations",
-        "autosrack": "Auto Srack",
         "ammunitionui": "Ammunition UI",
+        "autosrack": "Auto Srack",
         "indestructiblegun": "Indestructible Gun",
-        "recoiless": "Recoiless",
         "infiniteammunition": "Infinite Ammunition",
-        "neverjam": "Never Jam"
+        "neverjam": "Never Jam",
+        "recoiless": "Recoiless (need restart game)"
       }
+    }
+  },
+  "config": {
+    "lazyshooting": {
+      "ammunitionui": "Display your ammunition in real time!",
+      "autosrack": "If true, guns will automatically rack and stay racked when ammo is available.",
+      "indestructiblegun": "If true, guns will not be destroyed.",
+      "infiniteammunition": "∞ INFINITE AMMUNITION ∞",
+      "neverjam": "If true, guns will never jam.",
+      "recoiless": "If true, guns will not have recoil."
     }
   }
 }

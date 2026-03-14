@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using MossLib;
@@ -14,6 +15,7 @@ public class ModCommand : ModCommandBase
     private static ModCommand _instance;
     private static ModCommand Instance { get; set; } = new();
     private const string LocalePre = "command.lazyshooting.";
+    private const string LocalePreType = LocalePre + "type.";
 
     public static void Initialize(ManualLogSource logger)
     {
@@ -32,53 +34,45 @@ public class ModCommand : ModCommandBase
         // ReSharper disable once InconsistentNaming
         public static void RegisterCustomCommands(ConsoleScript __instance)
         {
-            string localePreType = $"{LocalePre}type.";
             void Action(string[] args)
             {
                 Tools.CheckArgumentCount(args, 1);
-                Tools.CheckForWorld();
                 switch (args[1])
                 {
-                    case "autosrack":
-                        ModConfigs.AutoRack = !ModConfigs.AutoRack;
-                        Output(ModLocale.GetFormat($"{localePreType}autosrack"), ModConfigs.AutoRack, __instance);
-                        break;
                     case "ammunitionui":
-                        ModConfigs.AmmunitionUi = !ModConfigs.AmmunitionUi;
-                        Output(ModLocale.GetFormat($"{localePreType}ammunitionui"), ModConfigs.AutoRack, __instance);
+                        SwitchType(Plugin.AmmunitionUi, "ammunitionui", __instance);
+                        break;
+                    case "autosrack":
+                        SwitchType(Plugin.AutoRack, "autosrack",  __instance);
                         break;
                     case "indestructiblegun":
-                        ModConfigs.IndestructibleGun = !ModConfigs.IndestructibleGun;
-                        Output(ModLocale.GetFormat($"{localePreType}indestructiblegun"), ModConfigs.AutoRack, __instance);
-                        break;
-                    case "recoiless":
-                        ModConfigs.Recoiless = !ModConfigs.Recoiless;
-                        Output(ModLocale.GetFormat($"{localePreType}recoiless"), ModConfigs.AutoRack, __instance);
+                        SwitchType(Plugin.IndestructibleGun, "indestructiblegun",  __instance);
                         break;
                     case "infiniteammunition":
-                        ModConfigs.InfiniteAmmunition = !ModConfigs.InfiniteAmmunition;
-                        Output(ModLocale.GetFormat($"{localePreType}infiniteammunition"), ModConfigs.AutoRack, __instance);
+                        SwitchType(Plugin.InfiniteAmmunition, "infiniteammunition",  __instance);
                         break;
                     case "neverjam":
-                        ModConfigs.NeverJam = !ModConfigs.NeverJam;
-                        Output(ModLocale.GetFormat($"{localePreType}neverjam"), ModConfigs.AutoRack, __instance);
+                        SwitchType(Plugin.NeverJam, "neverjam",  __instance);
+                        break;
+                    case "recoiless":
+                        SwitchType(Plugin.Recoiless, "recoiless",  __instance);
                         break;
                     default:
-                        throw new Exception(ModLocale.GetFormat($"{localePreType}exception"));
+                        throw new Exception(ModLocale.GetFormat($"{LocalePreType}exception"));
                 }
             }
             Dictionary<int, List<string>> argAutofill2 = new Dictionary<int, List<string>>
             { { 0, [
-                "autosrack",
                 "ammunitionui",
+                "autosrack",
                 "indestructiblegun",
-                "recoiless",
                 "infiniteammunition",
-                "neverjam"
+                "neverjam",
+                "recoiless"
             ] } };
             (string, string)[] valueTupleArray =
             [
-                ("type", ModLocale.GetFormat($"{localePreType}name"))
+                ("type", ModLocale.GetFormat($"{LocalePreType}name"))
             ];
             Command lazyshooting = new Command("lazyshooting", ModLocale.GetFormat($"{LocalePre}description"), Action, argAutofill2, valueTupleArray);
             ConsoleScript.Commands.Add(lazyshooting);
@@ -95,9 +89,10 @@ public class ModCommand : ModCommandBase
             Application.logMessageReceived += Instance.ApplicationLogCallback;
         }
     }
-
-    private static void Output(string type, bool state, ConsoleScript instance)
+    
+    private static void SwitchType(ConfigEntry<bool> configEntry, string configName, ConsoleScript consoleScript)
     {
-        Tools.LogToConsoleAndLog(ModLocale.GetFormat($"{LocalePre}output", type, state), instance);
+        Tools.SwitchType(Plugin.Guid, configEntry, ModLocale.GetFormat($"{LocalePreType}{configName}", configName), Plugin.Logger, consoleScript);
+        ModConfigs.Update();
     }
 }

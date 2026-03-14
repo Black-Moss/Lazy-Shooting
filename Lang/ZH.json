@@ -2,17 +2,26 @@
   "command": {
     "lazyshooting": {
       "description": "设置懒人射击的各项配置",
-      "exception": "“{}”是错误的参数！",
-      "output": "已将{}设置为{}!",
+      "exception": "“{0}”是错误的参数！",
       "type": { 
         "name": "配置项",
+        "ammunitionui": "弹药 UI",
         "autosrack": "自动上膛",
-        "ammunitionui": "弹药UI",
         "indestructiblegun": "不毁枪械",
-        "recoiless": "无后座",
         "infiniteammunition": "无限弹药",
-        "neverjam": "永不卡壳"
+        "neverjam": "永不卡壳",
+        "recoiless": "无后座（需要重启）"
       }
+    }
+  },
+  "config": {
+    "lazyshooting": {
+      "ammunitionui": "实时显示你的弹药！",
+      "autosrack": "开启后，当有弹药时，枪械将自动拉栓并保持拉栓状态",
+      "indestructiblegun": "开启后，枪械将不会损坏。",
+      "infiniteammunition": "∞ 无限子弹 ∞",
+      "neverjam": "开启后，枪械将不会卡壳",
+      "recoiless": "开启后，枪械将没有后坐力"
     }
   }
 }

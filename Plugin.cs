@@ -22,11 +22,12 @@ public class Plugin : BaseUnityPlugin
     private readonly Harmony _harmony = new(Guid);
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public static Plugin Instance { get; private set; } = null!;
+    private static bool _hasOne = false;
     
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> NeverJam;
     // ReSharper disable once MemberCanBePrivate.Global
-    public static ConfigEntry<bool> NeverRack;
+    public static ConfigEntry<bool> AlwaysRack;
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> AmmunitionUi;
     // ReSharper disable once MemberCanBePrivate.Global
@@ -44,11 +45,11 @@ public class Plugin : BaseUnityPlugin
             false,
             "If true, guns will never jam."
         );
-        NeverRack = Config.Bind(
+        AlwaysRack = Config.Bind(
             "General",
-            "Never Rack",
+            "Always Rack",
             false,
-            "If true, guns will never rack."
+            "If true, guns will automatically rack and stay racked when ammo is available."
         );
         AmmunitionUi = Config.Bind(
             "General",
@@ -71,11 +72,23 @@ public class Plugin : BaseUnityPlugin
         // ReSharper disable once InconsistentNaming
         private static void Prefix(GunScript __instance)
         {
-             // 启用永远上膛且不是泵动式时 重置上膛状态
-            if (NeverRack.Value
-                && __instance.firingMode != GunScript.FiringMode.Pump
-                )
+            if (__instance.roundInChamber == GunScript.RoundInChamber.Round
+                && __instance.roundsInMag == 0)
             {
+                _hasOne = true;
+            }
+            else
+            {
+                _hasOne = false;
+            }
+            
+            if (AlwaysRack.Value 
+                && __instance.roundInChamber 
+                    is GunScript.RoundInChamber.Casing or GunScript.RoundInChamber.None
+                && __instance.roundsInMag > 0)
+            {
+                __instance.roundsInMag--;
+                __instance.roundInChamber = GunScript.RoundInChamber.Round;
                 __instance.racked = false;
             }
             
@@ -94,7 +107,6 @@ public class Plugin : BaseUnityPlugin
         private static void Postfix(ref float __result)
         {
             // 如果启用了永不卡壳，则将卡壳几率设置为 0
-            
             if (!NeverJam.Value) return;
             
             __result = 0;
@@ -210,11 +222,11 @@ public class Plugin : BaseUnityPlugin
             if (_ammunitionText == null)
                 return;
             
-            if (_remainingAmmunition >= _maximumAmmunition * 0.5)
+            if (_remainingAmmunition >= _maximumAmmunition * 0.8)
             {
                 _ammunitionText.color = Color.green;
             }
-            else if (_remainingAmmunition >= 10)
+            else if (_remainingAmmunition >= _maximumAmmunition * 0.5)
             {
                 _ammunitionText.color = Color.yellow;
             }
@@ -223,7 +235,7 @@ public class Plugin : BaseUnityPlugin
                 _ammunitionText.color = Color.red;
             }
             
-            _ammunitionText.text = $"{_remainingAmmunition} / {_maximumAmmunition}";
+            _ammunitionText.text = $"{(_hasOne ? _remainingAmmunition + 1 : _remainingAmmunition)} / {_maximumAmmunition + 1}";
         }
         
         private static void SyncVisibility(GameObject gunMenu)

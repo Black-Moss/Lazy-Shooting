@@ -1,4 +1,5 @@
-﻿using BepInEx;
+﻿using System.Linq;
+using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -26,6 +27,8 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<bool> NeverJam;
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> NeverRack;
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static ConfigEntry<bool> AmmunitionUi;
 
     public void Awake()
     {
@@ -39,12 +42,17 @@ public class Plugin : BaseUnityPlugin
             false,
             "If true, guns will never jam."
         );
-        
         NeverRack = Config.Bind(
             "General",
             "Never Rack",
             false,
             "If true, guns will never rack."
+        );
+        AmmunitionUi = Config.Bind(
+            "General",
+            "Ammunition UI",
+            true,
+            "Display your ammunition in real time!"
         );
     }
     
@@ -85,6 +93,7 @@ public class Plugin : BaseUnityPlugin
     {
         private static TextMeshProUGUI _ammunitionText;
         private static GameObject _ammunitionUiObject;
+        private static readonly TMP_FontAsset GameFont = Resources.FindObjectsOfTypeAll<TMP_FontAsset>().FirstOrDefault(f => f.name.Contains("Retro GamingPix"));
         
         private static int _remainingAmmunition;
         private static int _maximumAmmunition;
@@ -93,14 +102,23 @@ public class Plugin : BaseUnityPlugin
         // ReSharper disable once InconsistentNaming
         private static void Postfix(PlayerCamera __instance)
         {
+            if (!AmmunitionUi.Value) return;
             if (!__instance.body.HoldingItem(__instance.body.handSlot) ||
-                !__instance.body.GetItem(__instance.body.handSlot).Stats.HasTag("gun")) return;
+                !__instance.body.GetItem(__instance.body.handSlot).Stats.HasTag("gun"))
+            {
+                DestroyAmmunitionUi();
+                return;
+            }
+            
             GunScript component = __instance.body.GetItem(__instance.body.handSlot).GetComponent<GunScript>();
 
             _remainingAmmunition = component.roundsInMag;
             _maximumAmmunition = component.magCapacity;
             
             CreateOrUpdateAmmunitionUi(__instance);
+            UpdateAmmunitionUi();
+            
+            SyncVisibility(__instance.gunMenu);
         }
         
         private static void CreateOrUpdateAmmunitionUi(PlayerCamera camera)
@@ -112,6 +130,7 @@ public class Plugin : BaseUnityPlugin
         
                 Canvas canvas = ammunitionUi.AddComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 0;
         
                 CanvasScaler canvasScaler = ammunitionUi.AddComponent<CanvasScaler>();
                 canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -154,28 +173,23 @@ public class Plugin : BaseUnityPlugin
             
             rectTransform.anchoredPosition = new Vector2(gunMenuPos.x, gunMenuPos.y - 450f);
             rectTransform.sizeDelta = new Vector2(150f, 30f);
-    
+            
+            _ammunitionText.font = GameFont;
             _ammunitionText.fontSize = 32;
             _ammunitionText.alignment = TextAlignmentOptions.Center;
-            _ammunitionText.color = Color.white;
-            _ammunitionText.outlineWidth = 0.2f;
-            _ammunitionText.outlineColor = Color.black;
+            
+            SyncVisibility(camera.gunMenu);
         }
         
         private static Vector2 GetGunMenuPosition(PlayerCamera camera)
         {
-            if (camera.gunMenu != null)
-            {
-                RectTransform gunMenuRect = camera.gunMenu.GetComponent<RectTransform>();
-                if (gunMenuRect != null)
-                {
-                    Vector2 pos = gunMenuRect.anchoredPosition;
-                    pos.y -= gunMenuRect.rect.height * 0.5f;
-                    return pos;
-                }
-            }
-            
-            return new Vector2(0f, 50f);
+            if (camera.gunMenu == null) return new Vector2(0f, 50f);
+            RectTransform gunMenuRect = camera.gunMenu.GetComponent<RectTransform>();
+            if (gunMenuRect == null) return new Vector2(0f, 50f);
+            Vector2 pos = gunMenuRect.anchoredPosition;
+            pos.y -= gunMenuRect.rect.height * 0.5f;
+            return pos;
+
         }
         
         private static void UpdateAmmunitionUi()
@@ -191,6 +205,14 @@ public class Plugin : BaseUnityPlugin
             };
             
             _ammunitionText.text = $"{_remainingAmmunition} / {_maximumAmmunition}";
+        }
+        
+        private static void SyncVisibility(GameObject gunMenu)
+        {
+            if (_ammunitionUiObject == null || gunMenu == null)
+                return;
+                
+            _ammunitionUiObject.SetActive(gunMenu.activeSelf);
         }
         
         private static void DestroyAmmunitionUi()

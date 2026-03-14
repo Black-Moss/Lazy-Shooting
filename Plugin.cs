@@ -3,14 +3,18 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 
-namespace BlackMossTemplate;
+namespace LazyShooting;
 
 [BepInPlugin(Guid, Name, "1.0.0")]
+[BepInDependency(MossLib.Plugin.Guid)]
 public class Plugin : BaseUnityPlugin
 {
+    // ReSharper disable once MemberCanBePrivate.Global
     internal new static ManualLogSource Logger;
-    internal const string Guid = "blackmoss.template";
-    internal const string Name = "Black_Moss Template";
+    // ReSharper disable once MemberCanBePrivate.Global
+    public const string Guid = "blackmoss.lazyshooting";
+    // ReSharper disable once MemberCanBePrivate.Global
+    public const string Name = "Lazy Shooting";
     private readonly Harmony _harmony = new(Guid);
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public static Plugin Instance { get; private set; } = null!;

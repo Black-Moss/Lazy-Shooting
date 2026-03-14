@@ -32,6 +32,10 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<bool> AmmunitionUi;
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> InfiniteAmmunition;
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static ConfigEntry<bool> Recoiless;
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static ConfigEntry<bool> IndestructibleGun;
 
     public void Awake()
     {
@@ -63,6 +67,18 @@ public class Plugin : BaseUnityPlugin
             false,
             "INFINITE"
         );
+        Recoiless = Config.Bind(
+            "General",
+            "Recoiless",
+            false,
+            "If true, guns will not have recoil."
+        );
+        IndestructibleGun = Config.Bind(
+            "General",
+            "Indestructible Gun",
+            false,
+            "If true, guns will not be destroyed."
+        );
     }
     
     [HarmonyPatch(typeof(GunScript), "Update")]
@@ -84,10 +100,9 @@ public class Plugin : BaseUnityPlugin
                 __instance.racked = false;
             }
             
-            if (InfiniteAmmunition.Value)
-            {
-                __instance.roundsInMag = __instance.magCapacity;
-            }
+            if (InfiniteAmmunition.Value)  __instance.roundsInMag = __instance.magCapacity;
+            if (Recoiless.Value) __instance.knockBack = 0;
+            if (IndestructibleGun.Value) __instance.conditionLossPerShot = 0;
         }
     }
     

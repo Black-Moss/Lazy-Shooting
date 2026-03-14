@@ -2,6 +2,7 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using UnityEngine;
 
 namespace LazyShooting;
 
@@ -18,7 +19,11 @@ public class Plugin : BaseUnityPlugin
     private readonly Harmony _harmony = new(Guid);
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public static Plugin Instance { get; private set; } = null!;
-    private ConfigEntry<int> _testNumber;
+    
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static ConfigEntry<bool> NeverJam;
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static ConfigEntry<bool> NeverRack;
 
     public void Awake()
     {
@@ -26,12 +31,52 @@ public class Plugin : BaseUnityPlugin
         Instance = this;
         _harmony.PatchAll();
             
-        _testNumber = Config.Bind(
-            "General",                // 配置节名称
-            "TEST Number",         // 配置项名称
-            60,                   // 默认值
-            "Default 1 minute."    // 描述信息
+        NeverJam = Config.Bind(
+            "General",
+            "Never Jam",
+            false,
+            "If true, guns will never jam."
         );
-        Logger.LogInfo($"Here's Black Moss! {_testNumber.Value}");
+        
+        NeverRack = Config.Bind(
+            "General",
+            "Never Rack",
+            false,
+            "If true, guns will never rack."
+        );
+    }
+    
+    [HarmonyPatch(typeof(GunScript), "JamChance")]
+    private static class JamChancePatch
+    {
+        // ReSharper disable once UnusedMember.Local
+        // ReSharper disable once RedundantAssignment
+        // ReSharper disable once InconsistentNaming
+        private static bool Prefix(ref float __result)
+        {
+            if (!NeverJam.Value) return true;
+            __result = 0f;
+            return false;
+        }
+    }
+    
+    [HarmonyPatch(typeof(GunScript), "Update")]
+    private static class GunScriptUpdatePatch
+    {
+        // ReSharper disable once UnusedMember.Local
+        // ReSharper disable once InconsistentNaming
+        private static void Postfix(GunScript __instance)
+        {
+            if (NeverRack.Value 
+                && !__instance.racked
+                && (
+                    __instance.roundsInMag > 0 
+                    || __instance.feedType == GunScript.FeedType.Direct)
+                && __instance.roundInChamber == GunScript.RoundInChamber.None
+                && __instance.triggerPressed)
+            {
+                __instance.TryRack();
+            }
+        }
     }
 }

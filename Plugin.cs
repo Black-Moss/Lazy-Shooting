@@ -2,7 +2,6 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-using UnityEngine;
 
 namespace LazyShooting;
 
@@ -53,16 +52,28 @@ public class Plugin : BaseUnityPlugin
         // ReSharper disable once InconsistentNaming
         private static void Prefix(GunScript __instance)
         {
-            if (!NeverRack.Value 
-                || __instance.firingMode == GunScript.FiringMode.Pump) return;
-            
-            if (__instance.racked
-                && (__instance.roundsInMag > 0 
-                    || __instance.feedType == GunScript.FeedType.Direct) 
-                && __instance.roundInChamber == GunScript.RoundInChamber.None)
+             // 启用永远上膛且不是泵动式时 重置上膛状态
+            if (NeverRack.Value
+                && __instance.firingMode == GunScript.FiringMode.Pump
+                )
             {
                 __instance.racked = false;
             }
+        }
+    }
+    
+    [HarmonyPatch(typeof(GunScript), "JamChance")]
+    private static class GunScriptJamChancePatch
+    {
+        // ReSharper disable once UnusedMember.Local
+        // ReSharper disable once InconsistentNaming
+        private static void Postfix(ref float __result)
+        {
+            // 如果启用了永不卡壳，则将卡壳几率设置为0
+            
+            if (!NeverJam.Value) return;
+            
+            __result = 0;
         }
     }
 }

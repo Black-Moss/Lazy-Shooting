@@ -46,36 +46,22 @@ public class Plugin : BaseUnityPlugin
         );
     }
     
-    [HarmonyPatch(typeof(GunScript), "JamChance")]
-    private static class JamChancePatch
-    {
-        // ReSharper disable once UnusedMember.Local
-        // ReSharper disable once RedundantAssignment
-        // ReSharper disable once InconsistentNaming
-        private static bool Prefix(ref float __result)
-        {
-            if (!NeverJam.Value) return true;
-            __result = 0f;
-            return false;
-        }
-    }
-    
     [HarmonyPatch(typeof(GunScript), "Update")]
     private static class GunScriptUpdatePatch
     {
         // ReSharper disable once UnusedMember.Local
         // ReSharper disable once InconsistentNaming
-        private static void Postfix(GunScript __instance)
+        private static void Prefix(GunScript __instance)
         {
-            if (NeverRack.Value 
-                && !__instance.racked
-                && (
-                    __instance.roundsInMag > 0 
-                    || __instance.feedType == GunScript.FeedType.Direct)
-                && __instance.roundInChamber == GunScript.RoundInChamber.None
-                && __instance.triggerPressed)
+            if (!NeverRack.Value 
+                || __instance.firingMode == GunScript.FiringMode.Pump) return;
+            
+            if (__instance.racked
+                && (__instance.roundsInMag > 0 
+                    || __instance.feedType == GunScript.FeedType.Direct) 
+                && __instance.roundInChamber == GunScript.RoundInChamber.None)
             {
-                __instance.TryRack();
+                __instance.racked = false;
             }
         }
     }

@@ -13,7 +13,8 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <PackageProjectUrl>https://github.com/Black-Moss/Lazy-Shooting</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Black-Moss/LazyS-hooting</RepositoryUrl>
-    <PackageId>LazyShooting</PackageId>
+    <PackageId>Lazy-Shooting</PackageId>
+    <RootNamespace>LazyShooting</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

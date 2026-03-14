@@ -1,3 +1,18 @@
 ﻿{
-  "log.test": "测试！"
+  "command": {
+    "lazyshooting": {
+      "description": "设置懒人射击的各项配置",
+      "exception": "“{}”是错误的参数！",
+      "output": "已将{}设置为{}!",
+      "type": { 
+        "name": "配置项",
+        "autosrack": "自动上膛",
+        "ammunitionui": "弹药UI",
+        "indestructiblegun": "不毁枪械",
+        "recoiless": "无后座",
+        "infiniteammunition": "无限弹药",
+        "neverjam": "永不卡壳"
+      }
+    }
+  }
 }

@@ -27,7 +27,7 @@ public class Plugin : BaseUnityPlugin
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> NeverJam;
     // ReSharper disable once MemberCanBePrivate.Global
-    public static ConfigEntry<bool> AlwaysRack;
+    public static ConfigEntry<bool> AutoRack;
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> AmmunitionUi;
     // ReSharper disable once MemberCanBePrivate.Global
@@ -42,6 +42,8 @@ public class Plugin : BaseUnityPlugin
         Logger = base.Logger;
         Instance = this;
         _harmony.PatchAll();
+        ModLocale.Initialize(Logger);
+        ModCommand.Initialize(Logger);
         
         NeverJam = Config.Bind(
             "General",
@@ -49,7 +51,7 @@ public class Plugin : BaseUnityPlugin
             false,
             "If true, guns will never jam."
         );
-        AlwaysRack = Config.Bind(
+        AutoRack = Config.Bind(
             "General",
             "Always Rack",
             false,
@@ -90,7 +92,7 @@ public class Plugin : BaseUnityPlugin
         {
             _hasOne = __instance.roundInChamber == GunScript.RoundInChamber.Round;
             
-            if (AlwaysRack.Value 
+            if (ModConfigs.AutoRack 
                 && __instance.roundInChamber 
                     is GunScript.RoundInChamber.Casing or GunScript.RoundInChamber.None
                 && __instance.roundsInMag > 0)
@@ -100,9 +102,9 @@ public class Plugin : BaseUnityPlugin
                 __instance.racked = false;
             }
             
-            if (InfiniteAmmunition.Value)  __instance.roundsInMag = __instance.magCapacity;
-            if (Recoiless.Value) __instance.knockBack = 0;
-            if (IndestructibleGun.Value) __instance.conditionLossPerShot = 0;
+            if (ModConfigs.InfiniteAmmunition)  __instance.roundsInMag = __instance.magCapacity;
+            if (ModConfigs.Recoiless) __instance.knockBack = 0;
+            if (ModConfigs.IndestructibleGun) __instance.conditionLossPerShot = 0;
         }
     }
     
@@ -113,7 +115,7 @@ public class Plugin : BaseUnityPlugin
         // ReSharper disable once InconsistentNaming
         private static void Postfix(ref float __result)
         {
-            if (!NeverJam.Value) return;
+            if (!ModConfigs.NeverJam) return;
             
             __result = 0;
         }
@@ -144,7 +146,7 @@ public class Plugin : BaseUnityPlugin
         // ReSharper disable once InconsistentNaming
         private static void Postfix(PlayerCamera __instance)
         {
-            if (!AmmunitionUi.Value) return;
+            if (!ModConfigs.AmmunitionUi) return;
             
             var handSlot = __instance.body.handSlot;
             if (!__instance.body.HoldingItem(handSlot))

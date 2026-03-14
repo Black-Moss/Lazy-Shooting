@@ -1,3 +1,18 @@
 ﻿{
-  "log.test": "TEST!"
+  "command": {
+    "lazyshooting": {
+      "description": "Set various configurations for Lazy Shooting",
+      "exception": "\"{}\" is an incorrect parameter!",
+      "output": "{} has been set to {}!",
+      "type": {
+        "name": "Configurations",
+        "autosrack": "Auto Srack",
+        "ammunitionui": "Ammunition UI",
+        "indestructiblegun": "Indestructible Gun",
+        "recoiless": "Recoiless",
+        "infiniteammunition": "Infinite Ammunition",
+        "neverjam": "Never Jam"
+      }
+    }
+  }
 }

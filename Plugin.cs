@@ -22,7 +22,7 @@ public class Plugin : BaseUnityPlugin
     private readonly Harmony _harmony = new(Guid);
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public static Plugin Instance { get; private set; } = null!;
-    private static bool _hasOne = false;
+    private static bool _hasOne;
     
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> NeverJam;
@@ -72,15 +72,7 @@ public class Plugin : BaseUnityPlugin
         // ReSharper disable once InconsistentNaming
         private static void Prefix(GunScript __instance)
         {
-            if (__instance.roundInChamber == GunScript.RoundInChamber.Round
-                && __instance.roundsInMag == 0)
-            {
-                _hasOne = true;
-            }
-            else
-            {
-                _hasOne = false;
-            }
+            _hasOne = __instance.roundInChamber == GunScript.RoundInChamber.Round;
             
             if (AlwaysRack.Value 
                 && __instance.roundInChamber 
@@ -106,7 +98,6 @@ public class Plugin : BaseUnityPlugin
         // ReSharper disable once InconsistentNaming
         private static void Postfix(ref float __result)
         {
-            // 如果启用了永不卡壳，则将卡壳几率设置为 0
             if (!NeverJam.Value) return;
             
             __result = 0;
@@ -118,24 +109,43 @@ public class Plugin : BaseUnityPlugin
     {
         private static TextMeshProUGUI _ammunitionText;
         private static GameObject _ammunitionUiObject;
-        private static readonly TMP_FontAsset GameFont = Resources.FindObjectsOfTypeAll<TMP_FontAsset>().FirstOrDefault(f => f.name.Contains("Retro GamingPix"));
+        private static bool _fontInitialized;
         
         private static int _remainingAmmunition;
         private static int _maximumAmmunition;
+        
+        private static TMP_FontAsset GameFont
+        {
+            get
+            {
+                if (_fontInitialized) return field;
+                field = Resources.FindObjectsOfTypeAll<TMP_FontAsset>().FirstOrDefault(f => f.name.Contains("Retro GamingPix"));
+                _fontInitialized = true;
+                return field;
+            }
+        }
         
         // ReSharper disable once UnusedMember.Local
         // ReSharper disable once InconsistentNaming
         private static void Postfix(PlayerCamera __instance)
         {
             if (!AmmunitionUi.Value) return;
-            if (!__instance.body.HoldingItem(__instance.body.handSlot) ||
-                !__instance.body.GetItem(__instance.body.handSlot).Stats.HasTag("gun"))
+            
+            var handSlot = __instance.body.handSlot;
+            if (!__instance.body.HoldingItem(handSlot))
             {
                 DestroyAmmunitionUi();
                 return;
             }
             
-            GunScript component = __instance.body.GetItem(__instance.body.handSlot).GetComponent<GunScript>();
+            var item = __instance.body.GetItem(handSlot);
+            if (!item.Stats.HasTag("gun"))
+            {
+                DestroyAmmunitionUi();
+                return;
+            }
+            
+            GunScript component = item.GetComponent<GunScript>();
 
             _remainingAmmunition = component.roundsInMag;
             _maximumAmmunition = component.magCapacity;
@@ -164,44 +174,27 @@ public class Plugin : BaseUnityPlugin
                 ammunitionUi.AddComponent<GraphicRaycaster>();
                 
                 _ammunitionUiObject = ammunitionUi;
-            }
-            
-            Transform textTransform = _ammunitionUiObject.transform.Find("AmmunitionText");
-            GameObject gameObject;
-            
-            if (textTransform == null)
-            {
-                gameObject = new GameObject("AmmunitionText");
+                
+                var gameObject = new GameObject("AmmunitionText");
                 gameObject.transform.SetParent(_ammunitionUiObject.transform, false);
-            }
-            else
-            {
-                gameObject = textTransform.gameObject;
-            }
-    
-            RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
-            if (rectTransform == null)
-            {
-                rectTransform = gameObject.AddComponent<RectTransform>();
-            }
-            
-            if (_ammunitionText == null)
-            {
-                _ammunitionText = gameObject.GetComponent<TextMeshProUGUI>();
-                if (_ammunitionText == null)
-                {
-                    _ammunitionText = gameObject.AddComponent<TextMeshProUGUI>();
-                }
+                
+                RectTransform rectTransform = gameObject.AddComponent<RectTransform>();
+                rectTransform.anchoredPosition = Vector2.zero;
+                rectTransform.sizeDelta = new Vector2(150f, 30f);
+                
+                _ammunitionText = gameObject.AddComponent<TextMeshProUGUI>();
+                _ammunitionText.fontSize = 32;
+                _ammunitionText.alignment = TextAlignmentOptions.Center;
             }
             
             Vector2 gunMenuPos = GetGunMenuPosition(camera);
+            RectTransform textRectTransform = _ammunitionText.GetComponent<RectTransform>();
+            textRectTransform.anchoredPosition = new Vector2(gunMenuPos.x, gunMenuPos.y - 450f);
             
-            rectTransform.anchoredPosition = new Vector2(gunMenuPos.x, gunMenuPos.y - 450f);
-            rectTransform.sizeDelta = new Vector2(150f, 30f);
-            
-            _ammunitionText.font = GameFont;
-            _ammunitionText.fontSize = 32;
-            _ammunitionText.alignment = TextAlignmentOptions.Center;
+            if (GameFont != null)
+            {
+                _ammunitionText.font = GameFont;
+            }
             
             SyncVisibility(camera.gunMenu);
         }
@@ -219,14 +212,15 @@ public class Plugin : BaseUnityPlugin
         
         private static void UpdateAmmunitionUi()
         {
+            var realremainingAmmunition = _hasOne ? _remainingAmmunition + 1 : _remainingAmmunition;
             if (_ammunitionText == null)
                 return;
             
-            if (_remainingAmmunition >= _maximumAmmunition * 0.8)
+            if (realremainingAmmunition >= 0.8)
             {
                 _ammunitionText.color = Color.green;
             }
-            else if (_remainingAmmunition >= _maximumAmmunition * 0.5)
+            else if (realremainingAmmunition >= 0.5)
             {
                 _ammunitionText.color = Color.yellow;
             }
@@ -235,7 +229,7 @@ public class Plugin : BaseUnityPlugin
                 _ammunitionText.color = Color.red;
             }
             
-            _ammunitionText.text = $"{(_hasOne ? _remainingAmmunition + 1 : _remainingAmmunition)} / {_maximumAmmunition + 1}";
+            _ammunitionText.text = $"{realremainingAmmunition} / {_maximumAmmunition + 1}";
         }
         
         private static void SyncVisibility(GameObject gunMenu)
@@ -248,8 +242,7 @@ public class Plugin : BaseUnityPlugin
         
         private static void DestroyAmmunitionUi()
         {
-            if (!(_ammunitionUiObject != null))
-                return;
+            if (_ammunitionUiObject == null) return;
             Destroy(_ammunitionUiObject);
             _ammunitionUiObject = null;
             _ammunitionText = null;

@@ -29,6 +29,8 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<bool> NeverRack;
     // ReSharper disable once MemberCanBePrivate.Global
     public static ConfigEntry<bool> AmmunitionUi;
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static ConfigEntry<bool> InfiniteAmmunition;
 
     public void Awake()
     {
@@ -54,6 +56,12 @@ public class Plugin : BaseUnityPlugin
             true,
             "Display your ammunition in real time!"
         );
+        InfiniteAmmunition = Config.Bind(
+            "General",
+            "Infinite Ammunition",
+            false,
+            "INFINITE"
+        );
     }
     
     [HarmonyPatch(typeof(GunScript), "Update")]
@@ -65,10 +73,15 @@ public class Plugin : BaseUnityPlugin
         {
              // 启用永远上膛且不是泵动式时 重置上膛状态
             if (NeverRack.Value
-                && __instance.firingMode == GunScript.FiringMode.Pump
+                && __instance.firingMode != GunScript.FiringMode.Pump
                 )
             {
                 __instance.racked = false;
+            }
+            
+            if (InfiniteAmmunition.Value)
+            {
+                __instance.roundsInMag = __instance.magCapacity;
             }
         }
     }
@@ -196,13 +209,19 @@ public class Plugin : BaseUnityPlugin
         {
             if (_ammunitionText == null)
                 return;
-
-            _ammunitionText.color = _remainingAmmunition switch
+            
+            if (_remainingAmmunition >= _maximumAmmunition * 0.5)
             {
-                >= 10 => Color.green,
-                >= 3 => Color.yellow,
-                _ => Color.red
-            };
+                _ammunitionText.color = Color.green;
+            }
+            else if (_remainingAmmunition >= 10)
+            {
+                _ammunitionText.color = Color.yellow;
+            }
+            else
+            {
+                _ammunitionText.color = Color.red;
+            }
             
             _ammunitionText.text = $"{_remainingAmmunition} / {_maximumAmmunition}";
         }

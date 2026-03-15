@@ -5,7 +5,7 @@
       "exception": "“{0}”是错误的参数！",
       "type": { 
         "name": "配置项",
-        "ammunitionui": "弹药 UI",
+        "ammunitionui": "弹药UI",
         "autosrack": "自动上膛",
         "indestructiblegun": "不毁枪械",
         "infiniteammunition": "无限弹药",
@@ -16,9 +16,9 @@
   },
   "config": {
     "lazyshooting": {
-      "ammunitionui": "实时显示你的弹药！",
+      "ammunitionui": "在原枪械菜单的上方显示枪械剩余弹量和最大弹量",
       "autosrack": "开启后，当有弹药时，枪械将自动拉栓并保持拉栓状态",
-      "indestructiblegun": "开启后，枪械将不会损坏。",
+      "indestructiblegun": "开启后，枪械将不会损坏",
       "infiniteammunition": "∞ 无限子弹 ∞",
       "neverjam": "开启后，枪械将不会卡壳",
       "recoiless": "开启后，枪械将没有后坐力"

@@ -4,7 +4,7 @@
 
 # Lazy Shooting
 
-[GitHub](https://github.com/Black-Moss/Lazy-Shooting) / [Nexus Mods](https://www.nexusmods.com/scavprototype/mods/8)
+[GitHub](https://github.com/Black-Moss/Lazy-Shooting) / [Nexus Mods](https://www.nexusmods.com/scavprototype/mods/14)
 
 按住你的鼠标左键射穿地层！
 

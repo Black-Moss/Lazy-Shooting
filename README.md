@@ -4,7 +4,7 @@ __English Guide__ | [中文指南](README_ZH.md)
 
 # Lazy Shooting
 
-[GitHub](https://github.com/Black-Moss/Lazy-Shooting) / [Nexus Mods](https://www.nexusmods.com/scavprototype/mods/8)
+[GitHub](https://github.com/Black-Moss/Lazy-Shooting) / [Nexus Mods](https://www.nexusmods.com/scavprototype/mods/14)
 
 Hold your left mouse button to shoot through the layers!
 
